@@ -17,7 +17,7 @@ from typing import Any
 from dotenv import load_dotenv
 from fake_useragent import UserAgent
 from playwright.async_api import BrowserContext, Page, async_playwright
-from playwright_stealth import stealth_async
+from playwright_stealth import stealth
 
 
 DEHRADUN_AREAS = ["Jakhan", "Race Course", "Rajpur Road"]
@@ -119,7 +119,7 @@ class DehradunDishIntelAgent:
     async def discover_restaurants(self, page: Page, area: str) -> list[Restaurant]:
         url = self._area_search_url(area)
         await page.goto(url, wait_until="domcontentloaded", timeout=90000)
-        await stealth_async(page)
+        await stealth(page)
         await self._jitter()
         await self._human_like_scroll(page, cycles=12)
 
@@ -177,7 +177,7 @@ class DehradunDishIntelAgent:
             url = url.rstrip("/") + "/order"
 
         await page.goto(url, wait_until="domcontentloaded", timeout=90000)
-        await stealth_async(page)
+        await stealth(page)
         await self._jitter()
         await self._human_like_scroll(page, cycles=8)
 
