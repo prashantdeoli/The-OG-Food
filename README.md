@@ -4,17 +4,23 @@ Python Playwright-based AI data agent that extracts dish-level intelligence from
 
 ## What it does
 
-- Crawls area-wise listings (default: Jakhan, Race Course, Rajpur Road) and collects restaurant targets without filtering by low rating.
-- Opens each restaurant order/menu page and extracts dish-level fields:
+- Crawls area-wise listings (default: Jakhan, Race Course, Rajpur Road) and collects restaurant targets **without filtering low-rated restaurants**.
+- Uses `playwright-stealth` v2 style integration (`from playwright_stealth import stealth` + `await stealth(page)`).
+- Uses network/API interception for menu extraction:
+  - **Zomato**: captures internal `getPage` JSON responses.
+  - **Swiggy**: captures `/dapi/menu/v4/full` responses.
+- Extracts dish-level fields:
   - `dish_name`
   - `price`
-  - `aggregate_dish_rating` (stored as `dish_rating`)
-  - `total_votes_per_dish` (stored as `dish_votes`)
+  - `dish_rating`
+  - `dish_votes`
   - `is_bestseller`
 - Applies hidden-gem heuristic (`high_potential_item = True`):
   - restaurant overall rating `< 4.0`
   - dish rating `> 4.5`
   - dish votes `> 10`
+- Computes `market_score` as:
+  - `Dish_Rating * log10(Dish_Votes + 1)`
 - Uses anti-blocking tactics:
   - random user-agent rotation
   - randomized delays/jitter
@@ -60,6 +66,7 @@ Output files are generated under `output/`:
 
 CSV columns:
 
+- `platform`
 - `restaurant_name`
 - `overall_rating`
 - `dish_name`
@@ -69,3 +76,4 @@ CSV columns:
 - `location_tag`
 - `is_bestseller`
 - `high_potential_item`
+- `market_score`
