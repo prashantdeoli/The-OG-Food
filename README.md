@@ -1,32 +1,29 @@
-# Dehradun Dish Intelligence Agent
+# Dehradun Unified Food Intelligence Agent (v2.0)
 
-Python Playwright-based AI data agent that extracts dish-level intelligence from food delivery platforms (Zomato/Swiggy) for Dehradun areas.
+Playwright-based data agent for extracting dish-level intelligence from **Zomato + Swiggy** in Dehradun.
 
-## What it does
+## Key capabilities
 
-- Crawls area-wise listings (default: Jakhan, Race Course, Rajpur Road) and collects restaurant targets **without filtering low-rated restaurants**.
-- Uses `playwright-stealth` v2 style integration (`from playwright_stealth import stealth` + `await stealth(page)`).
-- Uses network/API interception for menu extraction:
-  - **Zomato**: captures internal `getPage` JSON responses.
-  - **Swiggy**: captures `/dapi/menu/v4/full` responses.
-- Extracts dish-level fields:
-  - `dish_name`
-  - `price`
-  - `dish_rating`
-  - `dish_votes`
-  - `is_bestseller`
-- Applies hidden-gem heuristic (`high_potential_item = True`):
-  - restaurant overall rating `< 4.0`
-  - dish rating `> 4.5`
-  - dish votes `> 10`
-- Computes `market_score` as:
-  - `Dish_Rating * log10(Dish_Votes + 1)`
-- Uses anti-blocking tactics:
-  - random user-agent rotation
-  - randomized delays/jitter
-  - human-like scrolling
-  - optional residential proxy via env vars
-- Produces a master database in both CSV and JSON.
+- Area-wise restaurant discovery for Dehradun (default: Jakhan, Race Course, Rajpur Road).
+- No filtering by restaurant rating during discovery (full-spectrum coverage).
+- API interception:
+  - **Zomato**: intercepts internal `getPage` responses.
+  - **Swiggy**: intercepts `/dapi/menu/v4/full` responses.
+- Required fields extracted:
+  - `platform`, `restaurant_name`, `overall_rating`, `dish_name`, `price`, `dish_rating`, `dish_votes`, `is_bestseller`, `location_tag`
+- Hidden gem heuristic:
+  - `overall_rating < 4.0` AND `dish_rating > 4.5` AND `dish_votes > 10`
+- Market score:
+  - `market_score = dish_rating * log10(dish_votes + 1)`
+
+## Security / resilience upgrades
+
+- Proper stealth integration for `playwright-stealth` v2 (`from playwright_stealth import stealth` + `await stealth(page)`).
+- macOS/Chrome-like browser fingerprinting (`channel="chrome"`, realistic UA/viewport, language/timezone).
+- Header mimicry (`Accept`, `Accept-Language`, `Referer`, fetch hints).
+- Randomized delays + human-like scrolling.
+- Retry handler for transient blocks (including `ERR_HTTP2_PROTOCOL_ERROR`).
+- Residential proxy rotation via `PROXY_URL` (comma-separated pool supported).
 
 ## Setup
 
@@ -37,43 +34,30 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
-## Optional proxy configuration
+## Environment config
 
-Create `.env` with:
+Create `.env`:
 
 ```env
-RES_PROXY_SERVER=http://host:port
-RES_PROXY_USERNAME=your_username
-RES_PROXY_PASSWORD=your_password
+# Single proxy
+PROXY_URL=http://username:password@host:port
+
+# OR rotating pool (comma-separated)
+# PROXY_URL=http://u:p@ip1:port,http://u:p@ip2:port,http://u:p@ip3:port
 ```
 
 ## Run
 
 ```bash
 python agent.py --platform zomato
+python agent.py --platform swiggy --areas "Jakhan" "Rajpur Road"
 ```
 
-Custom areas / limits:
+## Output
 
-```bash
-python agent.py --platform swiggy --areas "Jakhan" "Race Course" "Rajpur Road" --max-restaurants-per-area 100
-```
+- `output/master_market_report.csv` (consolidated master report)
+- `output/dehradun_master_database_<timestamp>.json`
 
-Output files are generated under `output/`:
+## Recommendation
 
-- `dehradun_master_database_<timestamp>.json`
-- `dehradun_master_database_<timestamp>.csv`
-
-CSV columns:
-
-- `platform`
-- `restaurant_name`
-- `overall_rating`
-- `dish_name`
-- `dish_rating`
-- `dish_votes`
-- `price`
-- `location_tag`
-- `is_bestseller`
-- `high_potential_item`
-- `market_score`
+Cloud notebooks and data-center IPs are often blocked by Zomato/Swiggy anti-bot layers. Prefer local execution (Mac/Windows/Linux with residential proxy) for production reliability.
